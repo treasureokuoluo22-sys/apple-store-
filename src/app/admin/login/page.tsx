@@ -8,6 +8,7 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -29,7 +30,12 @@ export default function AdminLoginPage() {
         });
 
         if (error) {
-          setErrorMessage(error.message);
+          setErrorMessage(
+            error.code === "signup_disabled" ||
+              error.code === "email_provider_disabled"
+              ? "New admin account signup is disabled in Supabase. Enable email signups in Authentication settings, then try again."
+              : error.message
+          );
           return;
         }
 
@@ -116,23 +122,35 @@ export default function AdminLoginPage() {
               Password
             </label>
 
-            <input
-              id="password"
-              type="password"
-              autoComplete={
-                mode === "signup" ? "new-password" : "current-password"
-              }
-              minLength={8}
-              required
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-xl border border-neutral-300 px-4 py-3 outline-none transition focus:border-neutral-800 focus:ring-2 focus:ring-neutral-200"
-              placeholder={
-                mode === "signup"
-                  ? "At least 8 characters"
-                  : "Enter your password"
-              }
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete={
+                  mode === "signup" ? "new-password" : "current-password"
+                }
+                minLength={8}
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="w-full rounded-xl border border-neutral-300 px-4 py-3 pr-16 outline-none transition focus:border-neutral-800 focus:ring-2 focus:ring-neutral-200"
+                placeholder={
+                  mode === "signup"
+                    ? "At least 8 characters"
+                    : "Enter your password"
+                }
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-controls="password"
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((visible) => !visible)}
+                className="absolute inset-y-0 right-3 text-sm font-medium text-neutral-600 hover:text-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-800"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
 
           {errorMessage && (

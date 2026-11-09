@@ -39,9 +39,11 @@ assigned to the existing Supabase Auth account; the migration stops if it
 cannot safely identify exactly one existing account. Each admin can manage
 only their own products, checkout
 links, orders, and receipt images. Public product checkout links remain
-readable. Enable email signups in Supabase under Authentication settings.
-Admin signup is open to anyone who can reach the login page, so use this only
-if that is intended for your store.
+readable. To allow new admin accounts, enable **Allow new users to sign up**
+under **Authentication → Settings → User Signups** in the Supabase dashboard,
+and ensure the Email provider is enabled. If signup is disabled, the admin login
+page will show a specific message. Admin signup is open to anyone who can reach
+the login page, so use this only if that is intended for your store.
 
 Each admin dashboard lists only that admin's products. Its product setup form
 creates a product with its name, description, up to three uploaded photos, and
