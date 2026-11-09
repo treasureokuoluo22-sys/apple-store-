@@ -13,6 +13,7 @@ type EditableProductDetails = {
   id: string;
   name: string;
   description: string | null;
+  recipient_name: string | null;
   image_url: string | null;
   image_url_2: string | null;
   image_url_3: string | null;
@@ -26,6 +27,9 @@ export default function ProductDetailsEditor({
   const router = useRouter();
   const [name, setName] = useState(product.name);
   const [description, setDescription] = useState(product.description ?? "");
+  const [recipientName, setRecipientName] = useState(
+    product.recipient_name ?? ""
+  );
   const [photoUrls, setPhotoUrls] = useState([
     product.image_url,
     product.image_url_2,
@@ -103,6 +107,7 @@ export default function ProductDetailsEditor({
         .update({
           name: name.trim(),
           description: description.trim(),
+          recipient_name: recipientName.trim() || null,
           image_url: nextPhotoUrls[0],
           image_url_2: nextPhotoUrls[1],
           image_url_3: nextPhotoUrls[2],
@@ -215,6 +220,20 @@ export default function ProductDetailsEditor({
           onChange={(event) => setDescription(event.target.value)}
           className="w-full rounded-xl border border-neutral-300 px-4 py-3 font-normal outline-none focus:border-neutral-800"
         />
+      </label>
+
+      <label className="block space-y-2 text-sm font-medium">
+        Recipient name shown at checkout
+        <input
+          value={recipientName}
+          onChange={(event) => setRecipientName(event.target.value)}
+          placeholder="Leave blank for the customer to enter a name"
+          className="w-full rounded-xl border border-neutral-300 px-4 py-3 font-normal outline-none focus:border-neutral-800"
+        />
+        <span className="block font-normal text-neutral-600">
+          This name is prefilled on the customer checkout page and can still be
+          changed by the customer.
+        </span>
       </label>
 
       <fieldset className="space-y-4">

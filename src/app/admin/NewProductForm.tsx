@@ -20,6 +20,7 @@ export default function NewProductForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [recipientName, setRecipientName] = useState("");
   const [photoFiles, setPhotoFiles] = useState<(File | null)[]>([
     null,
     null,
@@ -200,6 +201,7 @@ export default function NewProductForm() {
           owner_id: authData.user.id,
           name: name.trim(),
           description: description.trim(),
+          recipient_name: recipientName.trim() || null,
           price: parsedPrice,
           price_gbp: parsedPriceGbp,
           price_eur: parsedPriceEur,
@@ -327,6 +329,7 @@ export default function NewProductForm() {
               onClick={() => {
                 setName("");
                 setDescription("");
+                setRecipientName("");
                 setPhotoFiles([null, null, null]);
                 setPrice("");
                 setPriceGbp("");
@@ -377,6 +380,20 @@ export default function NewProductForm() {
             onChange={(event) => setDescription(event.target.value)}
             className={fieldClassName}
           />
+        </label>
+
+        <label className="space-y-2 text-sm font-medium sm:col-span-2">
+          Recipient name shown at checkout
+          <input
+            value={recipientName}
+            onChange={(event) => setRecipientName(event.target.value)}
+            placeholder="Leave blank for the customer to enter a name"
+            className={fieldClassName}
+          />
+          <span className="block font-normal text-neutral-600">
+            This name will appear in the customer&apos;s “Buy for” section and
+            prefill the recipient name field. Customers can still edit it.
+          </span>
         </label>
 
         <fieldset className="space-y-4 sm:col-span-2">

@@ -366,10 +366,14 @@ export default function OrderConfirmationPage() {
           )}
 
           <Link
-            href="/"
+            href={
+              confirmation?.productId
+                ? `/products/${confirmation.productId}`
+                : "/admin"
+            }
             className="mt-8 inline-flex rounded-full bg-[#1d1d1f] px-5 py-3 text-sm font-medium text-white hover:bg-black"
           >
-            Return to store
+            {confirmation?.productId ? "Return to product" : "Return to admin"}
           </Link>
         </section>
       </div>

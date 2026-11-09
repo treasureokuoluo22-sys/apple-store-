@@ -2,7 +2,6 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase-browser";
 
 export default function AdminLoginPage() {
@@ -73,14 +72,7 @@ export default function AdminLoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#f5f5f7] px-5 py-12 text-[#1d1d1f]">
       <section className="w-full max-w-md rounded-3xl border border-black/5 bg-white p-8 shadow-sm sm:p-10">
-        <Link
-          href="/"
-          className="text-sm text-[#06c] hover:underline"
-        >
-          ← Back to store
-        </Link>
-
-        <div className="mb-8 mt-8">
+        <div className="mb-8 mt-2">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
             Store management
           </p>

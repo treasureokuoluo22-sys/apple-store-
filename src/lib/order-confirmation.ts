@@ -4,6 +4,7 @@ export const ORDER_CONFIRMATION_STORAGE_KEY = "store-order-confirmation";
 
 export type OrderConfirmation = {
   orderNumber: string;
+  productId?: string;
   productName: string;
   productPrice: number;
   currencyCode?: CheckoutCurrency;
@@ -27,6 +28,8 @@ export function isOrderConfirmation(
 
   return (
     typeof confirmation.orderNumber === "string" &&
+    (confirmation.productId === undefined ||
+      typeof confirmation.productId === "string") &&
     typeof confirmation.productName === "string" &&
     typeof confirmation.productPrice === "number" &&
     (confirmation.currencyCode === undefined ||

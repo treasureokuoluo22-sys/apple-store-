@@ -27,7 +27,7 @@ export default async function AdminProductPage({
   const { data: product, error } = await supabase
     .from("products")
     .select(
-      "id, name, description, price, price_gbp, price_eur, sale_price, sale_price_gbp, sale_price_eur, image_url, image_url_2, image_url_3, updated_at"
+      "id, name, description, recipient_name, price, price_gbp, price_eur, sale_price, sale_price_gbp, sale_price_eur, image_url, image_url_2, image_url_3, updated_at"
     )
     .eq("id", id)
     .eq("owner_id", user.id)
@@ -89,6 +89,7 @@ export default async function AdminProductPage({
                   id: product.id,
                   name: product.name,
                   description: product.description,
+                  recipient_name: product.recipient_name,
                   image_url: product.image_url,
                   image_url_2: product.image_url_2,
                   image_url_3: product.image_url_3,

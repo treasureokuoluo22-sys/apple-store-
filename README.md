@@ -21,6 +21,11 @@ product price takes precedence over conversion; leave it blank to use the
 corresponding exchange rate. Converted prices are rounded to cents. The product
 and submitted database order remain priced in USD; the checkout currency is a
 display-only demo because this site does not process payments.
+
+Apply [`supabase/migrations/20261108000100_product_recipient_name.sql`](./supabase/migrations/20261108000100_product_recipient_name.sql)
+to add an optional recipient name to products. Admins can set the name in each
+product's details; it is prefilled on that product's checkout page and remains
+editable by the customer.
 Apply [`supabase/migrations/20261106000100_product_sale_prices.sql`](./supabase/migrations/20261106000100_product_sale_prices.sql)
 to add optional sale prices in USD, GBP, and EUR. Set regular and sale prices
 for each currency in the product's admin page. Sale prices must be lower than
