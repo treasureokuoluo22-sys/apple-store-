@@ -241,13 +241,6 @@ export default function OrderReviewPage() {
   const receiptUnavailable =
     receiptLoadErrorFor === confirmation?.orderNumber;
 
-  const formattedPrice = confirmation
-    ? new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: confirmation.currencyCode ?? "USD",
-      }).format(confirmation.productPrice)
-    : "";
-
   async function copyReceipt() {
     if (!receiptPreviewUrl) return;
     setReceiptAction("copy");
@@ -444,59 +437,20 @@ export default function OrderReviewPage() {
 
               </div>
 
-              <div className="mt-8 rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-left">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold">
-                    Demo checkout status
-                  </p>
-
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      reviewComplete
-                        ? "bg-green-100 text-green-800"
-                        : "bg-amber-100 text-amber-800"
-                    }`}
-                  >
-                    {reviewComplete ? "Payment successful" : "Payment pending"}
-                  </span>
-                </div>
-
-                <div className="mt-4 space-y-2 text-sm text-neutral-600">
-                  <p>
-                    <span className="font-medium text-neutral-900">
-                      Recipient:
-                    </span>{" "}
-                    {confirmation.recipientName}
-                  </p>
-
-                  <p>
-                    <span className="font-medium text-neutral-900">
-                      Product:
-                    </span>{" "}
-                    {confirmation.productName}
-                  </p>
-
-                  <p>
-                    <span className="font-medium text-neutral-900">
-                      Total:
-                    </span>{" "}
-                    {formattedPrice}
-                  </p>
-                </div>
-              </div>
-
               <p className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-left text-xs leading-5 text-amber-950">
                 DEMO ONLY: The payment-pending animation runs for 20 seconds
                 before the demo shows success. It does not charge you, transfer
                 money, verify a payment, or update the store order status.
               </p>
 
-              <Link
-                href="/"
-                className="mt-7 inline-flex rounded-full bg-[#1d1d1f] px-6 py-3 text-sm font-medium text-white transition hover:bg-black"
-              >
-                Return to store
-              </Link>
+              {reviewComplete && (
+                <a
+                  href="https://www.apple.com/"
+                  className="mt-7 inline-flex rounded-full bg-[#1d1d1f] px-6 py-3 text-sm font-medium text-white transition hover:bg-black"
+                >
+                  Close
+                </a>
+              )}
             </>
           ) : (
             <>
