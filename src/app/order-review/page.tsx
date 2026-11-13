@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { loadDemoOrderPhoto } from "@/lib/demo-order-photo";
 import {
   createDemoReviewDeadline,
-  DEMO_REVIEW_DURATION_MS,
   isOrderConfirmation,
   ORDER_CONFIRMATION_STORAGE_KEY,
 } from "@/lib/order-confirmation";
@@ -234,17 +233,6 @@ export default function OrderReviewPage() {
   ]);
 
   const reviewComplete = remainingMs <= 0;
-  const progress = confirmation
-    ? Math.min(
-        100,
-        Math.max(
-          0,
-          ((DEMO_REVIEW_DURATION_MS - remainingMs) /
-            DEMO_REVIEW_DURATION_MS) *
-            100
-        )
-      )
-    : 0;
   const receiptPreviewUrl =
     confirmation &&
     receiptPreview?.orderNumber === confirmation.orderNumber
@@ -304,7 +292,7 @@ export default function OrderReviewPage() {
       const objectUrl = URL.createObjectURL(receipt);
       const link = document.createElement("a");
       link.href = objectUrl;
-      link.download = `receipt-${confirmation.orderNumber}.${extension}`;
+      link.download = `payment-receipt.${extension}`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -353,7 +341,7 @@ export default function OrderReviewPage() {
                   {receiptPreviewUrl ? (
                     <Image
                       src={receiptPreviewUrl}
-                      alt={`Payment receipt submitted for order ${confirmation.orderNumber}`}
+                      alt="Payment receipt submitted"
                       fill
                       unoptimized
                       sizes="(max-width: 640px) 100vw, 384px"
@@ -408,7 +396,7 @@ export default function OrderReviewPage() {
                   )}
                 </div>
                 <p className="mt-3 text-center text-sm text-neutral-500">
-                  Receipt for order #{confirmation.orderNumber}
+                  Submitted payment receipt
                 </p>
                 <div className="mt-4 flex flex-wrap justify-center gap-3">
                   <button
@@ -454,19 +442,6 @@ export default function OrderReviewPage() {
                   </span>
                 </div>
 
-                <div
-                  className="mt-3 h-2 overflow-hidden rounded-full bg-neutral-100"
-                  role="progressbar"
-                  aria-label="Demo checkout progress"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={progress}
-                >
-                  <div
-                    className="h-full rounded-full bg-[#0071e3] transition-[width] duration-100"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
               </div>
 
               <div className="mt-8 rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-left">
@@ -487,13 +462,6 @@ export default function OrderReviewPage() {
                 </div>
 
                 <div className="mt-4 space-y-2 text-sm text-neutral-600">
-                  <p>
-                    <span className="font-medium text-neutral-900">
-                      Order number:
-                    </span>{" "}
-                    #{confirmation.orderNumber}
-                  </p>
-
                   <p>
                     <span className="font-medium text-neutral-900">
                       Recipient:
