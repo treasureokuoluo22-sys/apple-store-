@@ -1,8 +1,6 @@
 
 "use client";
 
-import { useState } from "react";
-
 export type StoreOrder = {
   id: string;
   order_number: number;
@@ -21,12 +19,10 @@ export type StoreOrder = {
   landmark: string | null;
   delivery_instructions: string | null;
   preferred_delivery_time: string | null;
-  gift_card_image_path: string | null;
   status: string;
-  payment_status: string;
   created_at: string;
-  gift_card_image_url: string | null;
-  gift_card_image_error: string | null;
+  product_photo_url: string | null;
+  product_photo_error: string | null;
 };
 
 export default function OrdersList({
@@ -34,10 +30,6 @@ export default function OrdersList({
 }: {
   orders: StoreOrder[];
 }) {
-  const [selectedImages, setSelectedImages] = useState<
-    Record<string, boolean>
-  >({});
-
   if (orders.length === 0) {
     return (
       <section className="mt-8 rounded-2xl border border-black/5 bg-white p-6">
@@ -54,8 +46,8 @@ export default function OrdersList({
       <h2 className="text-xl font-semibold">Customer orders</h2>
 
       <p className="mt-2 text-sm text-neutral-500">
-        Review submitted orders and their payment receipt attachments.
-        Uploaded images do not confirm payment.
+        These are simulated orders only. No payments are collected, and no
+        shipments are created.
       </p>
 
       <div className="mt-6 space-y-6">
@@ -116,48 +108,38 @@ export default function OrdersList({
                 }).format(Number(order.product_price))}
               </p>
               <p className="mt-1">
-                <strong>Payment status:</strong> {order.payment_status}
+                <strong>Payment status:</strong> No payment collected (demo)
               </p>
             </div>
 
-            <div className="mt-6 border-t border-neutral-200 pt-6">
-  <h4 className="text-base font-semibold text-neutral-900">
-    Payment receipt image
-  </h4>
-
-  {order.gift_card_image_url ? (
-    <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4">
-      <img
-        src={order.gift_card_image_url}
-        alt={`Payment receipt for order ${order.order_number}`}
-        className="w-full rounded-xl object-contain"
-      />
-
-      <p className="mt-3 text-xs text-neutral-500">
-        Uploaded by the customer for manual review.
-      </p>
-    </div>
-  ) : order.gift_card_image_error ? (
-    <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-      <p className="text-sm text-amber-900">
-        The receipt image could not be loaded: {order.gift_card_image_error}
-      </p>
-    </div>
-  ) : (
-    <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-6 text-center">
-      <p className="text-sm font-medium text-neutral-700">
-        No payment receipt image submitted.
-      </p>
-    </div>
-  )}
-</div>
-    
-
-  <p className="mt-3 text-xs text-neutral-500">
-    Images are for manual review only. They do not confirm payment
-    or redemption.
-  </p>
-
+            <div className="mt-5 border-t border-neutral-200 pt-5">
+              <h4 className="font-semibold">Customer product photo</h4>
+              {order.product_photo_url ? (
+                <a
+                  href={order.product_photo_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-block"
+                >
+                  <img
+                    src={order.product_photo_url}
+                    alt={`Product photo submitted for order ${order.order_number}`}
+                    referrerPolicy="no-referrer"
+                    loading="lazy"
+                    className="max-h-96 max-w-full rounded-xl object-contain"
+                  />
+                </a>
+              ) : order.product_photo_error ? (
+                <p role="alert" className="mt-3 text-sm text-red-700">
+                  The product photo could not be loaded:{" "}
+                  {order.product_photo_error}
+                </p>
+              ) : (
+                <p className="mt-2 text-sm text-neutral-600">
+                  No product photo was submitted.
+                </p>
+              )}
+            </div>
           </article>
         ))}
       </div>

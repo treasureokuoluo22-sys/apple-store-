@@ -120,17 +120,17 @@ export default async function AdminDashboardPage() {
     sale_price: pricingByProductId.get(product.id)?.sale_price ?? null,
   }));
 
-  let ordersWithImages: StoreOrder[] = [];
+  let orders: StoreOrder[] = [];
   let ordersErrorMessage: string | null = null;
   const productIds = (baseProducts ?? []).map((product) => product.id);
 
   if (productIds.length > 0) {
     try {
       const adminSupabase = createAdminClient();
-      const { data: orders, error: ordersError } = await adminSupabase
+      const { data: loadedOrders, error: ordersError } = await adminSupabase
         .from("orders")
         .select(
-          "id, order_number, product_id, product_name, product_price, customer_name, customer_email, customer_phone, recipient_name, shipping_address, apartment, city, state, zip_code, country, landmark, delivery_instructions, preferred_delivery_time, gift_card_image_path, status, payment_status, created_at"
+          "id, order_number, product_id, product_name, product_price, customer_name, customer_email, customer_phone, recipient_name, shipping_address, apartment, city, state, zip_code, country, landmark, delivery_instructions, preferred_delivery_time, gift_card_image_path, status, created_at"
         )
         .in("product_id", productIds)
         .order("created_at", { ascending: false });
@@ -139,31 +139,47 @@ export default async function AdminDashboardPage() {
         console.error("Could not load customer orders:", ordersError.message);
         ordersErrorMessage = ordersError.message;
       } else {
-        ordersWithImages = await Promise.all(
-          (orders ?? []).map(async (order) => {
-            let gift_card_image_url: string | null = null;
-            let gift_card_image_error: string | null = null;
+        orders = await Promise.all(
+          (loadedOrders ?? []).map(async (order) => {
+            const { gift_card_image_path: productPhotoPath, ...orderDetails } =
+              order;
+            let product_photo_url: string | null = null;
+            let product_photo_error: string | null = null;
 
-            if (order.gift_card_image_path) {
-              const { data, error } = await adminSupabase.storage
-                .from("customer-uploads")
-                .createSignedUrl(order.gift_card_image_path, 60 * 60);
+            if (productPhotoPath) {
+              const photoBuckets = [
+                "customer-uploads",
+                "order-product-photos",
+              ] as const;
+              const photoErrors: string[] = [];
 
-              if (error) {
+              for (const bucket of photoBuckets) {
+                const { data, error } = await adminSupabase.storage
+                  .from(bucket)
+                  .createSignedUrl(productPhotoPath, 60 * 60);
+
+                if (error) {
+                  photoErrors.push(`${bucket}: ${error.message}`);
+                  continue;
+                }
+
+                product_photo_url = data.signedUrl;
+                break;
+              }
+
+              if (!product_photo_url && photoErrors.length > 0) {
+                product_photo_error = photoErrors.join("; ");
                 console.error(
-                  `Could not load receipt image for order ${order.order_number}:`,
-                  error.message
+                  `Could not load product photo for order ${order.order_number}:`,
+                  product_photo_error
                 );
-                gift_card_image_error = error.message;
-              } else {
-                gift_card_image_url = data.signedUrl;
               }
             }
 
             return {
-              ...order,
-              gift_card_image_url,
-              gift_card_image_error,
+              ...orderDetails,
+              product_photo_url,
+              product_photo_error,
             };
           })
         );
@@ -298,7 +314,7 @@ export default async function AdminDashboardPage() {
               Could not load customer orders: {ordersErrorMessage}
             </p>
           ) : (
-            <OrdersList orders={ordersWithImages} />
+            <OrdersList orders={orders} />
           )}
         </div>
         <CustomerUploadSettings />

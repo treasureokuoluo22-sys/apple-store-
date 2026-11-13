@@ -24,63 +24,54 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.demo-payment-card {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(135deg, #45454a, #1d1d1f 55%, #626268);
-  animation: demo-card-float 2.4s ease-in-out infinite;
+.demo-selfie-float {
+  animation: demo-selfie-float 2.8s ease-in-out infinite;
 }
 
-.demo-payment-card::after {
-  position: absolute;
-  inset: -50% auto -50% -45%;
-  width: 35%;
-  content: "";
-  background: linear-gradient(90deg, transparent, #ffffff35, transparent);
-  transform: rotate(25deg);
-  animation: demo-card-shine 2.4s ease-in-out infinite;
+.demo-success-mark {
+  animation: demo-success-pop 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.demo-payment-spinner {
-  width: 1.25rem;
-  height: 1.25rem;
-  border: 2px solid #ffffff65;
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: demo-spinner 0.8s linear infinite;
+.demo-success-check {
+  animation: demo-success-check 450ms 250ms ease-out both;
 }
 
-@keyframes demo-card-float {
+@keyframes demo-selfie-float {
   0%,
   100% {
-    transform: translateY(0);
+    transform: translateY(8px) rotate(-2deg);
   }
   50% {
-    transform: translateY(-5px);
+    transform: translateY(-14px) rotate(2deg);
   }
 }
 
-@keyframes demo-card-shine {
-  0%,
-  35% {
-    left: -45%;
+@keyframes demo-success-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.65);
   }
-  75%,
-  100% {
-    left: 120%;
-  }
-}
-
-@keyframes demo-spinner {
   to {
-    transform: rotate(360deg);
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes demo-success-check {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .demo-payment-card,
-  .demo-payment-card::after,
-  .demo-payment-spinner {
+  .demo-selfie-float,
+  .demo-success-mark,
+  .demo-success-check {
     animation: none;
   }
 }

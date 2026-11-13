@@ -1,13 +1,12 @@
-
 "use client";
-
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
+  createDemoReviewDeadline,
   ORDER_CONFIRMATION_STORAGE_KEY,
 } from "@/lib/order-confirmation";
-import { saveOrderConfirmationPhoto } from "@/lib/order-confirmation-photo";
+import { saveDemoOrderPhoto } from "@/lib/demo-order-photo";
 import {
   formatCurrency,
   getCheckoutPricing,
@@ -17,7 +16,6 @@ import {
   type CheckoutCurrency,
   type CurrencyRates,
 } from "@/lib/currency";
-
 type Product = {
   id: string;
   name: string;
@@ -33,7 +31,6 @@ type Product = {
   image_url_2: string | null;
   image_url_3: string | null;
 };
-
 type LoadedProduct = {
   id: string;
   name: string;
@@ -49,7 +46,6 @@ type LoadedProduct = {
   image_url_2: string | null;
   image_url_3: string | null;
 };
-
 const defaultProduct: Product = {
   id: "",
   name: "iPhone Pro",
@@ -65,10 +61,8 @@ const defaultProduct: Product = {
   image_url_2: null,
   image_url_3: null,
 };
-
 const inputClassName =
   "h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-base text-[#1d1d1f] outline-none transition placeholder:text-neutral-500 focus:border-[#0071e3] focus:ring-2 focus:ring-blue-100";
-
 function PhoneArtwork() {
   return (
     <div
@@ -91,7 +85,6 @@ function PhoneArtwork() {
     </div>
   );
 }
-
 export default function CheckoutPage({ productId }: { productId: string }) {
   const router = useRouter();
   const [product, setProduct] = useState<Product>(defaultProduct);
@@ -112,15 +105,10 @@ export default function CheckoutPage({ productId }: { productId: string }) {
     useState<CheckoutCurrency>("USD");
   const productGalleryRef = useRef<HTMLDivElement>(null);
   const checkoutRef = useRef<HTMLElement>(null);
-  const receiptCameraRef = useRef<HTMLVideoElement>(null);
-  const receiptCameraStreamRef = useRef<MediaStream | null>(null);
-  const [receiptCameraActive, setReceiptCameraActive] = useState(false);
-  const [receiptCameraError, setReceiptCameraError] = useState("");
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(
-    null
-  );
-
+  const paymentProofInputRef = useRef<HTMLInputElement>(null);
+  const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [paymentProofPreviewUrl, setPaymentProofPreviewUrl] = useState<string | null>(null);
+  const [paymentProofError, setPaymentProofError] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
@@ -130,7 +118,6 @@ export default function CheckoutPage({ productId }: { productId: string }) {
   const [zipCode, setZipCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [orderError, setOrderError] = useState("");
-
   const productImages = [
     product.image_url,
     product.image_url_2,
@@ -139,7 +126,6 @@ export default function CheckoutPage({ productId }: { productId: string }) {
     (imageUrl): imageUrl is string =>
       Boolean(imageUrl) && !failedProductImages[imageUrl as string]
   );
-
   const selectedPricing = getCheckoutPricing(
     product.price,
     selectedCurrency,
@@ -158,10 +144,8 @@ export default function CheckoutPage({ productId }: { productId: string }) {
   const hasSelectedDiscount =
     selectedPricing !== null &&
     selectedPricing.price < selectedPricing.regularPrice;
-
   useEffect(() => {
     let active = true;
-
     async function loadProduct() {
       let productQuery = supabase
         .from("products")
@@ -180,10 +164,9 @@ export default function CheckoutPage({ productId }: { productId: string }) {
       let recipientNameUnavailable = false;
       let currencyPricesUnavailable = false;
       let discountPricesUnavailable = false;
-
       if (
         error &&
-        /column (?:products\.)?recipient_name does not exist/i.test(
+        /column (?:product&#x73;\.)?recipient_name does not exist/i.test(
           error.message
         )
       ) {
@@ -206,10 +189,9 @@ export default function CheckoutPage({ productId }: { productId: string }) {
         error = legacyRecipientResult.error;
         recipientNameUnavailable = !error;
       }
-
       if (
         error &&
-        /column (?:products\.)?sale_price(?:_gbp|_eur)? does not exist/i.test(
+        /column (?:product&#x73;\.)?sale_price(?:_gbp|_eur)? does not exist/i.test(
           error.message
         )
       ) {
@@ -248,10 +230,9 @@ export default function CheckoutPage({ productId }: { productId: string }) {
         error = regularPriceResult.error;
         discountPricesUnavailable = !error;
       }
-
       if (
         error &&
-        /column (?:products\.)?price_(?:gbp|eur) does not exist/i.test(
+        /column (?:product&#x73;\.)?price_(?:gbp|eur) does not exist/i.test(
           error.message
         )
       ) {
@@ -286,15 +267,12 @@ export default function CheckoutPage({ productId }: { productId: string }) {
             .limit(1)
             .maybeSingle();
         }
-
         data = legacyResult.data;
         error = legacyResult.error;
         currencyPricesUnavailable = !error;
         discountPricesUnavailable = !error;
       }
-
       if (!active) return;
-
       if (error) {
         console.error("Could not load product:", error.message);
         setProductLoadError(
@@ -302,7 +280,6 @@ export default function CheckoutPage({ productId }: { productId: string }) {
         );
         return;
       }
-
       if (data) {
         const configuredRecipientName = recipientNameUnavailable
           ? null
@@ -342,9 +319,7 @@ export default function CheckoutPage({ productId }: { productId: string }) {
         );
       }
     }
-
     void loadProduct();
-
     return () => {
       active = false;
     };
@@ -365,7 +340,7 @@ export default function CheckoutPage({ productId }: { productId: string }) {
       if (error) {
         console.error("Could not load checkout currency rates:", error.message);
         setCurrencyRatesError(
-          "Exchange rates could not be loaded. Admin-set GBP/EUR prices may still be available; USD remains available."
+          "Exchange rates could not be loaded. USD remains available."
         );
       } else if (data) {
         setCurrencyRates({
@@ -394,247 +369,140 @@ export default function CheckoutPage({ productId }: { productId: string }) {
       checkoutRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [showCheckout]);
-
-  useEffect(() => {
-    if (receiptCameraActive && receiptCameraRef.current) {
-      receiptCameraRef.current.srcObject = receiptCameraStreamRef.current;
-      void receiptCameraRef.current.play().catch((error: unknown) => {
-        console.error("Could not start receipt camera preview:", error);
-        setReceiptCameraError(
-          "The camera preview could not start. Check camera permission and try again."
-        );
-      });
-    }
-  }, [receiptCameraActive]);
-
-  useEffect(
-    () => () => {
-      receiptCameraStreamRef.current?.getTracks().forEach((track) => {
-        track.stop();
-      });
-    },
-    []
-  );
-
-  useEffect(
-    () => () => {
-      if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl);
-    },
-    [receiptPreviewUrl]
-  );
-
-  function stopReceiptCamera() {
-    receiptCameraStreamRef.current?.getTracks().forEach((track) => {
-      track.stop();
-    });
-    receiptCameraStreamRef.current = null;
-    setReceiptCameraActive(false);
-  }
-
-  async function startReceiptCamera() {
-    setReceiptCameraError("");
-
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setReceiptCameraError(
-        "Camera capture is unavailable in this browser. Use a supported browser over HTTPS or localhost."
-      );
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: { facingMode: { ideal: "environment" } },
-      });
-      receiptCameraStreamRef.current = stream;
-      setReceiptCameraActive(true);
-    } catch (error) {
-      console.error("Could not access receipt camera:", error);
-      setReceiptCameraError(
-        "Could not access the camera. Allow camera permission and try again."
-      );
-    }
-  }
-
-  async function captureReceiptPhoto() {
-    const video = receiptCameraRef.current;
-
-    if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
-      setReceiptCameraError(
-        "The camera is not ready yet. Wait for the preview, then try again."
-      );
-      return;
-    }
-
-    const canvas = document.createElement("canvas");
-    const scale = Math.min(
-      1,
-      1600 / Math.max(video.videoWidth, video.videoHeight)
-    );
-    canvas.width = Math.round(video.videoWidth * scale);
-    canvas.height = Math.round(video.videoHeight * scale);
-
-    const context = canvas.getContext("2d");
-
-    if (!context) {
-      setReceiptCameraError("The camera photo could not be captured.");
-      return;
-    }
-
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const photo = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, "image/jpeg", 0.85);
-    });
-
-    if (!photo) {
-      setReceiptCameraError("The camera photo could not be saved.");
-      return;
-    }
-
-    setReceiptFile(
-      new File([photo], `payment-receipt-${Date.now()}.jpg`, {
-        type: "image/jpeg",
-      })
-    );
-
-    setReceiptPreviewUrl(URL.createObjectURL(photo));
-    setReceiptCameraError("");
-    stopReceiptCamera();
-  }
-
   async function submitOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setOrderError("");
-
+    setPaymentProofError("");
     if (!product.id) {
-      setOrderError(
-        "The product has not loaded from the database. Please refresh and try again."
-      );
+      setOrderError("The product has not loaded from the database. Please refresh and try again.");
       return;
     }
-
     if (selectedPrice === null) {
-      setOrderError(
-        "The selected currency has no configured product price or exchange rate. Choose another currency or contact the store administrator."
-      );
+      setOrderError("The selected currency has no configured product price or exchange rate. Choose another currency or contact the store administrator.");
       return;
     }
-
-    if (!receiptFile) {
-      setOrderError("Take a photo of your payment receipt before continuing.");
+    if (!paymentProof) {
+      setPaymentProofError("Please upload your payment receipt or transaction confirmation.");
+      paymentProofInputRef.current?.focus();
       return;
     }
-
-    if (!["image/jpeg", "image/png", "image/webp"].includes(receiptFile.type)) {
-      setOrderError("The receipt photo must be a JPG, PNG, or WebP image.");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(paymentProof.type)) {
+      setPaymentProofError("Choose a JPG, PNG, or WebP image.");
       return;
     }
-
-    if (receiptFile.size > 5 * 1024 * 1024) {
-      setOrderError("The receipt photo must be 5 MB or smaller.");
+    if (paymentProof.size > 5 * 1024 * 1024) {
+      setPaymentProofError("The image must be 5 MB or smaller.");
       return;
     }
-
+    if (!recipientName.trim() || !recipientPhone.trim() || !address.trim() ||
+        !city.trim() || !state.trim() || !zipCode.trim()) {
+      setOrderError("Please complete all required delivery details.");
+      return;
+    }
+    if (recipientEmail.trim() &&
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail.trim())) {
+      setOrderError("Enter a valid email address, or leave it blank.");
+      return;
+    }
     setSubmitting(true);
-
+    let uploadedProofPath: string | null = null;
     try {
       const extensionByType: Record<string, string> = {
         "image/jpeg": "jpg",
         "image/png": "png",
         "image/webp": "webp",
       };
-
-      const path = `submissions/${crypto.randomUUID()}.${extensionByType[receiptFile.type]}`;
-
+      const filePath = `submissions/${crypto.randomUUID()}.${extensionByType[paymentProof.type]}`;
       const { error: uploadError } = await supabase.storage
         .from("customer-uploads")
-        .upload(path, receiptFile, {
-          contentType: receiptFile.type,
+        .upload(filePath, paymentProof, {
+          cacheControl: "3600",
           upsert: false,
+          contentType: paymentProof.type,
         });
-
       if (uploadError) {
-        console.error("Checkout receipt upload failed:", uploadError);
-        throw new Error(`Receipt photo upload failed: ${uploadError.message}`);
+        throw new Error(`The payment receipt could not be uploaded: ${uploadError.message}`);
       }
-
-      const { data, error } = await supabase.rpc("submit_store_order", {
-        p_product_id: product.id,
-        p_customer_name: recipientName.trim(),
-        p_customer_email: recipientEmail.trim(),
-        p_customer_phone: recipientPhone.trim(),
-        p_shipping_address: address.trim(),
-        p_apartment: null,
-        p_city: city.trim(),
-        p_state: state.trim(),
-        p_zip_code: zipCode.trim(),
-        p_gift_card_image_path: path,
-        p_landmark: null,
-        p_delivery_instructions: null,
-        p_recipient_name: recipientName.trim(),
-        p_alternative_phone: null,
-        p_preferred_delivery_time: null,
-      });
-
-      if (error) {
-        console.error("Order submission failed:", error.message);
-        throw new Error(
-          "Your order could not be submitted. Please check your details and try again."
-        );
-      }
-
-      try {
-        try {
-          await saveOrderConfirmationPhoto(String(data), receiptFile);
-        } catch (photoStorageError) {
-          console.error(
-            "Could not transfer the captured receipt photo to the confirmation page:",
-            photoStorageError
-          );
+      uploadedProofPath = filePath;
+      const receiptPhotoKey = `receipt-${crypto.randomUUID()}`;
+      await saveDemoOrderPhoto(receiptPhotoKey, paymentProof);
+      const { data, error: orderErrorFromSupabase } = await supabase.rpc(
+        "submit_store_order",
+        {
+          p_product_id: product.id,
+          p_customer_name: recipientName.trim(),
+          p_customer_email: recipientEmail.trim(),
+          p_customer_phone: recipientPhone.trim(),
+          p_shipping_address: address.trim(),
+          p_apartment: null,
+          p_city: city.trim(),
+          p_state: state.trim(),
+          p_zip_code: zipCode.trim(),
+          p_gift_card_image_path: filePath,
+          p_landmark: null,
+          p_delivery_instructions: null,
+          p_recipient_name: recipientName.trim(),
+          p_alternative_phone: null,
+          p_preferred_delivery_time: null,
         }
-
-        sessionStorage.setItem(
-          ORDER_CONFIRMATION_STORAGE_KEY,
-          JSON.stringify({
-            orderNumber: String(data),
-            productId: product.id,
-            productName: product.name,
-            productPrice: selectedPrice,
-            currencyCode: selectedCurrency,
-            recipientName: recipientName.trim(),
-            recipientEmail: recipientEmail.trim(),
-            recipientPhone: recipientPhone.trim(),
-            shippingAddress: address.trim(),
-            city: city.trim(),
-            state: state.trim(),
-            zipCode: zipCode.trim(),
-          })
-        );
-      } catch (storageError) {
-        console.error("Could not save order confirmation:", storageError);
-        setOrderError(
-          "Your order was submitted, but this browser could not save the receipt details. Please contact the store administrator and do not submit the order again."
-        );
-        return;
+      );
+      if (orderErrorFromSupabase) {
+        throw new Error(`The order could not be saved: ${orderErrorFromSupabase.message}`);
       }
-
-      router.push("/order-confirmation");
+      let savedOrderNumber = "";
+      if (typeof data === "string" || typeof data === "number") {
+        savedOrderNumber = String(data);
+      } else if (data && typeof data === "object" && "order_number" in data) {
+        savedOrderNumber = String((data as { order_number: string | number }).order_number);
+      }
+      if (!savedOrderNumber) {
+        throw new Error("The database did not return an order number. Please contact the store administrator before submitting again.");
+      }
+      try {
+        await saveDemoOrderPhoto(savedOrderNumber, paymentProof);
+      } catch (error) {
+        console.error("Could not save the receipt preview under its order number:", error);
+      }
+      sessionStorage.setItem(
+        ORDER_CONFIRMATION_STORAGE_KEY,
+        JSON.stringify({
+          orderNumber: savedOrderNumber,
+          receiptPhotoKey,
+          reviewEndsAt: createDemoReviewDeadline(),
+          productId: product.id,
+          productName: product.name,
+          productPrice: selectedPrice,
+          currencyCode: selectedCurrency,
+          recipientName: recipientName.trim(),
+          recipientEmail: recipientEmail.trim(),
+          recipientPhone: recipientPhone.trim(),
+          shippingAddress: address.trim(),
+          city: city.trim(),
+          state: state.trim(),
+          zipCode: zipCode.trim(),
+        })
+      );
+      router.push("/order-review");
     } catch (error) {
+      console.error("Order submission failed:", error);
+      if (uploadedProofPath) {
+        const { error: cleanupError } = await supabase.storage
+          .from("customer-uploads")
+          .remove([uploadedProofPath]);
+        if (cleanupError) {
+          console.error("Could not clean up uploaded receipt:", cleanupError);
+        }
+      }
       setOrderError(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while submitting your order."
+        error instanceof Error ? error.message : "Your order could not be submitted. Please try again."
       );
     } finally {
       setSubmitting(false);
     }
   }
-
   function openCheckout() {
     setShowCheckout(true);
   }
-
   if (showCheckout) {
     return (
       <main
@@ -656,7 +524,6 @@ export default function CheckoutPage({ productId }: { productId: string }) {
             <span className="shrink-0">Bag</span>
           </div>
         </nav>
-
         <div className="mx-auto max-w-5xl px-6 pb-16">
           <div className="flex items-center justify-between border-b border-neutral-200 py-3">
             <h1 className="text-xl font-semibold">Checkout</h1>
@@ -670,7 +537,6 @@ export default function CheckoutPage({ productId }: { productId: string }) {
               {formatCurrency(selectedPrice ?? product.price, selectedCurrency)}
             </button>
           </div>
-
           {showOrderSummary && (
             <div className="border-b border-neutral-200 py-5 text-sm">
               <div className="flex justify-between gap-4">
@@ -711,7 +577,6 @@ export default function CheckoutPage({ productId }: { productId: string }) {
               </div>
             </div>
           )}
-
           <div className="max-w-3xl pt-10 sm:pt-12">
             {productLoadError && (
               <p
@@ -724,22 +589,18 @@ export default function CheckoutPage({ productId }: { productId: string }) {
             <h2 className="text-3xl font-semibold leading-tight tracking-tight sm:text-[40px]">
               Where should we send your order?
             </h2>
-
             <p className="mt-3 text-neutral-600">
               Buying for someone else? Enter the recipient’s delivery details.
             </p>
-
-            <form onSubmit={submitOrder} className="mt-8">
+            <form onSubmit={submitOrder} noValidate className="mt-8">
               <section aria-labelledby="currency-heading" className="mb-8">
                 <h3 id="currency-heading" className="text-lg font-semibold">
                   Choose your currency
                 </h3>
-
                 <div className="mt-3 max-w-md">
                   <label htmlFor="checkout-currency" className="sr-only">
                     Currency
                   </label>
-
                   <select
                     id="checkout-currency"
                     value={selectedCurrency}
@@ -775,19 +636,16 @@ export default function CheckoutPage({ productId }: { productId: string }) {
                     </option>
                   </select>
                 </div>
-
                 {!currencyRatesLoaded && (
                   <p className="mt-2 text-sm text-neutral-600">
                     Checking configured currency rates…
                   </p>
                 )}
-
                 {currencyRatesError && (
                   <p role="status" className="mt-2 text-sm text-amber-800">
                     {currencyRatesError}
                   </p>
                 )}
-
                 <p className="mt-3 flex items-baseline gap-2 text-sm font-semibold">
                   Product price:
                   {hasSelectedDiscount && selectedPricing && (
@@ -806,57 +664,49 @@ export default function CheckoutPage({ productId }: { productId: string }) {
                   </span>
                 </p>
               </section>
-
               <section aria-labelledby="delivery-details-heading">
                 <h3
                   id="delivery-details-heading"
                   className="text-lg font-semibold"
                 >
-                  Enter recipient name and address
+                  Recipient delivery details
                 </h3>
-
                 <p className="mt-1 text-sm text-neutral-600">
-                  Buy for: {recipientName.trim() || product.recipient_name || "the recipient"}
+                  Recipient shown:{" "}
+                  {recipientName.trim() ||
+                    product.recipient_name ||
+                    "the recipient"}
                 </p>
-
                 <div className="mt-4 max-w-md space-y-3">
                   <label className="sr-only" htmlFor="recipient-name">
                     Recipient full name
                   </label>
-
                   <input
                     id="recipient-name"
-                    required
                     autoComplete="name"
                     value={recipientName}
                     onChange={(event) => setRecipientName(event.target.value)}
                     placeholder="Full name"
                     className={inputClassName}
                   />
-
                   <label className="sr-only" htmlFor="shipping-address">
                     Street address
                   </label>
-
                   <input
                     id="shipping-address"
-                    required
                     autoComplete="street-address"
                     value={address}
                     onChange={(event) => setAddress(event.target.value)}
                     placeholder="Street address"
                     className={inputClassName}
                   />
-
                   <div className="grid grid-cols-[1.1fr_1.1fr_0.7fr] gap-2">
                     <div>
                       <label className="sr-only" htmlFor="zip-code">
                         ZIP code
                       </label>
-
                       <input
                         id="zip-code"
-                        required
                         autoComplete="postal-code"
                         value={zipCode}
                         onChange={(event) => setZipCode(event.target.value)}
@@ -864,15 +714,12 @@ export default function CheckoutPage({ productId }: { productId: string }) {
                         className={inputClassName}
                       />
                     </div>
-
                     <div>
-                      <label className="sr-only" htmlFor="city">
+                                          <label className="sr-only" htmlFor="city">
                         City
                       </label>
-
                       <input
                         id="city"
-                        required
                         autoComplete="address-level2"
                         value={city}
                         onChange={(event) => setCity(event.target.value)}
@@ -880,15 +727,12 @@ export default function CheckoutPage({ productId }: { productId: string }) {
                         className={inputClassName}
                       />
                     </div>
-
                     <div>
                       <label className="sr-only" htmlFor="state">
                         State
                       </label>
-
                       <input
                         id="state"
-                        required
                         autoComplete="address-level1"
                         value={state}
                         onChange={(event) => setState(event.target.value)}
@@ -899,7 +743,6 @@ export default function CheckoutPage({ productId }: { productId: string }) {
                   </div>
                 </div>
               </section>
-
               <section
                 aria-labelledby="contact-information-heading"
                 className="mt-8"
@@ -908,34 +751,28 @@ export default function CheckoutPage({ productId }: { productId: string }) {
                   id="contact-information-heading"
                   className="text-lg font-semibold"
                 >
-                  What’s your contact information?
+                  Contact details
                 </h3>
-
                 <div className="mt-4 grid max-w-3xl gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.8fr)] sm:items-center">
                   <div className="space-y-3">
                     <label className="sr-only" htmlFor="recipient-email">
                       Email address
                     </label>
-
                     <input
                       id="recipient-email"
                       type="email"
-                      required
                       autoComplete="email"
                       value={recipientEmail}
                       onChange={(event) => setRecipientEmail(event.target.value)}
                       placeholder="Email address"
                       className={inputClassName}
                     />
-
                     <label className="sr-only" htmlFor="recipient-phone">
                       Phone number
                     </label>
-
                     <input
                       id="recipient-phone"
                       type="tel"
-                      required
                       autoComplete="tel"
                       value={recipientPhone}
                       onChange={(event) => setRecipientPhone(event.target.value)}
@@ -943,97 +780,100 @@ export default function CheckoutPage({ productId }: { productId: string }) {
                       className={inputClassName}
                     />
                   </div>
-
                   <p className="text-sm leading-6 text-neutral-700">
-                    We’ll use this email and phone number to contact the
-                    recipient about this order.
+                    This demo keeps these details in this browser only. They
+                    will not be sent to a store or recipient.
                   </p>
                 </div>
               </section>
-
               <div className="my-8 border-t border-neutral-200" />
-
-              <section aria-labelledby="payment-heading">
-                <h3 id="payment-heading" className="text-lg font-semibold">
-                  Apple gift card
+              <section aria-labelledby="payment-proof-heading">
+                <h3 id="payment-proof-heading" className="text-lg font-semibold">
+                  Payment receipt
                 </h3>
-
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-700">
-                  Take a photo of your Apple gift card, make sure it clearly displays the pin on it.
+                  Upload an image of your bank transfer receipt or transaction
+                  confirmation so the store administrator can review it.
+                  Accepted formats: JPG, PNG, or WebP, up to 5 MB.
                 </p>
-
-                <div className="mt-4 max-w-md">
-                  {receiptCameraActive ? (
-                    <div className="space-y-3">
-                      <video
-                        ref={receiptCameraRef}
-                        autoPlay
-                        muted
-                        playsInline
-                        aria-label="Live payment receipt camera preview"
-                        className="max-h-[28rem] w-full rounded-2xl bg-black object-contain"
-                      />
-
-                      <div className="flex flex-wrap gap-3">
-                        <button
-                          type="button"
-                          onClick={() => void captureReceiptPhoto()}
-                          className="rounded-full bg-[#0071e3] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0077ed]"
-                        >
-                          Take a photo
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={stopReceiptCamera}
-                          className="rounded-full border border-neutral-300 px-5 py-3 text-sm font-semibold hover:bg-neutral-50"
-                        >
-                          Cancel camera
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
+                <input
+                  ref={paymentProofInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="sr-only"
+                  aria-label="Upload payment receipt"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] ?? null;
+                    setPaymentProofError("");
+                    if (paymentProofPreviewUrl) URL.revokeObjectURL(paymentProofPreviewUrl);
+                    setPaymentProof(file);
+                    setPaymentProofPreviewUrl(
+                      file && ["image/jpeg", "image/png", "image/webp"].includes(file.type)
+                        ? URL.createObjectURL(file)
+                        : null
+                    );
+                    if (file && !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+                      setPaymentProofError("Choose a JPG, PNG, or WebP image.");
+                    } else if (file && file.size > 5 * 1024 * 1024) {
+                      setPaymentProofError("The image must be 5 MB or smaller.");
+                    }
+                  }}
+                />
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => paymentProofInputRef.current?.click()}
+                    className="rounded-full bg-[#0071e3] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0077ed]"
+                  >
+                    {paymentProof ? "Choose another receipt" : "Upload payment receipt"}
+                  </button>
+                  {paymentProof && (
                     <button
                       type="button"
-                      onClick={() => void startReceiptCamera()}
-                      className="w-full rounded-xl bg-[#0071e3] px-5 py-4 text-left text-white transition hover:bg-[#0077ed] focus:outline-none focus:ring-4 focus:ring-blue-200"
+                      onClick={() => {
+                        if (paymentProofPreviewUrl) URL.revokeObjectURL(paymentProofPreviewUrl);
+                        setPaymentProof(null);
+                        setPaymentProofPreviewUrl(null);
+                        setPaymentProofError("");
+                      }}
+                      className="rounded-full border border-neutral-300 px-5 py-3 text-sm font-semibold hover:bg-neutral-50"
                     >
-                      <span className="block font-semibold">
-                        {receiptFile ? "Retake photo" : "Take a photo"}
-                      </span>
+                      Remove receipt
                     </button>
                   )}
-
-                  {receiptCameraError && (
-                    <p role="alert" className="mt-3 text-sm text-red-700">
-                      {receiptCameraError}
-                    </p>
-                  )}
-
-                  {receiptFile && receiptPreviewUrl && (
-                    <div className="mt-4 rounded-2xl border border-neutral-200 p-3">
-                      <img
-                        src={receiptPreviewUrl}
-                        alt="Captured payment receipt preview"
-                        className="max-h-[28rem] w-full rounded-xl object-contain"
-                      />
-
-                      <p className="mt-2 text-sm font-medium">
-                        Apple card photo captured
-                      </p>
-                    </div>
-                  )}
                 </div>
-
-                <button
-                  type="button"
-                  disabled
-                  className="mt-5 w-full max-w-md cursor-not-allowed rounded-xl bg-black px-5 py-4 font-medium text-white opacity-50"
-                >
-                  Check out with Apple Pay
-                </button>
+                {paymentProofError && (
+                  <p role="alert" className="mt-3 text-sm text-red-700">
+                    {paymentProofError}
+                  </p>
+                )}
+                {paymentProof && paymentProofPreviewUrl && (
+                  <div className="mt-4 max-w-md rounded-2xl border border-neutral-200 p-3">
+                    <img
+                      src={paymentProofPreviewUrl}
+                      alt="Payment receipt preview"
+                      className="max-h-[28rem] w-full rounded-xl object-contain"
+                    />
+                    <p className="mt-2 text-sm font-medium">
+                      Receipt selected: {paymentProof.name}
+                    </p>
+                  </div>
+                )}
+                <p className="mt-3 max-w-2xl text-xs leading-5 text-neutral-500">
+                  Never upload your card number, CVV, banking password, PIN, or
+                  one-time security code. A receipt upload does not mean payment
+                  has been verified.
+                </p>
               </section>
-
+              <div className="my-8 border-t border-neutral-200" />
+              <section aria-labelledby="demo-order-heading">
+                <h3 id="demo-order-heading" className="text-lg font-semibold">
+                  Order review
+                </h3>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-700">
+                  Your order details and uploaded receipt will be submitted to the store for administrator review. Uploading a receipt does not confirm payment or guarantee shipment.
+                </p>
+              </section>
               {orderError && (
                 <p
                   role="alert"
@@ -1042,20 +882,17 @@ export default function CheckoutPage({ productId }: { productId: string }) {
                   {orderError}
                 </p>
               )}
-
               <button
                 type="submit"
                 disabled={submitting}
                 className="mt-7 w-full max-w-md rounded-full bg-[#0071e3] px-8 py-4 font-semibold text-white transition hover:bg-[#0077ed] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {submitting ? "Submitting order…" : "Submit order"}
+                {submitting ? "Submitting order…" : "Submit order for review"}
               </button>
-
               <p className="mt-3 max-w-md text-xs leading-5 text-neutral-600">
-                Order submission is not payment confirmation. Payment must be
-                reviewed before the shipment delivery begins.
+                Your order will be saved for administrator review. Payment and delivery
+                remain pending until the store confirms them.
               </p>
-
               <button
                 type="button"
                 onClick={() => setShowCheckout(false)}
@@ -1069,7 +906,6 @@ export default function CheckoutPage({ productId }: { productId: string }) {
       </main>
     );
   }
-
   return (
     <main className="min-h-screen bg-white text-neutral-900">
       <nav className="border-b border-neutral-200 px-6 py-4">
@@ -1077,11 +913,8 @@ export default function CheckoutPage({ productId }: { productId: string }) {
           <span className="text-xl font-semibold tracking-tight">
             Apple Store
           </span>
-
-          
         </div>
       </nav>
-
       <section className="bg-white px-6 py-16 md:py-24 lg:py-28">
         {productLoadError && (
           <p
@@ -1096,21 +929,17 @@ export default function CheckoutPage({ productId }: { productId: string }) {
             <p className="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
               Apple Store
             </p>
-
             <p className="mb-2 text-base font-semibold text-[#bf4800]">
               New
             </p>
-
             <h1 className="text-3xl font-semibold leading-[1.08] tracking-[-0.035em] text-[#1d1d1f] sm:text-4xl">
               {product.name}
             </h1>
-
             {product.description && (
               <p className="mt-3 whitespace-pre-line text-xl font-semibold leading-8 text-[#1d1d1f] sm:text-2xl sm:leading-9">
                 {product.description}
               </p>
             )}
-
             <p className="mt-4 flex items-baseline gap-3 text-2xl font-bold tracking-tight text-[#1d1d1f] sm:text-3xl">
               {product.sale_price !== null &&
               product.sale_price >= 0 &&
@@ -1127,7 +956,6 @@ export default function CheckoutPage({ productId }: { productId: string }) {
                 formatCurrency(product.price, "USD")
               )}
             </p>
-
             <div className="mt-6 max-w-sm rounded-xl bg-[#f5f5f7] p-6 text-center">
               <button
                 type="button"
@@ -1135,28 +963,15 @@ export default function CheckoutPage({ productId }: { productId: string }) {
                 onClick={openCheckout}
                 className="w-full rounded-xl bg-[#0071e3] px-5 py-3.5 text-sm font-medium text-white transition hover:bg-[#0077ed] focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Pay with Apple card
+                Continue to checkout
               </button>
-
-              <button
-                type="button"
-                disabled
-                aria-label="Checkout with Apple Pay (currently unavailable)"
-                className="mt-3 w-full cursor-not-allowed rounded-xl bg-black px-5 py-3.5 text-sm font-medium text-white opacity-50"
-              >
-                Check out with Apple Pay
-              </button>
-
-              
             </div>
           </div>
-
           <div className="min-w-0">
             <div
               ref={productGalleryRef}
               onScroll={(event) => {
                 const gallery = event.currentTarget;
-
                 if (gallery.clientWidth > 0) {
                   setActiveProductImage(
                     Math.round(gallery.scrollLeft / gallery.clientWidth)
@@ -1192,7 +1007,6 @@ export default function CheckoutPage({ productId }: { productId: string }) {
                 </div>
               )}
             </div>
-
             {productImages.length > 1 && (
               <div className="mt-4 flex justify-center gap-2">
                 {productImages.map((imageUrl, index) => (
@@ -1205,7 +1019,6 @@ export default function CheckoutPage({ productId }: { productId: string }) {
                           productGalleryRef.current.clientWidth * index,
                         behavior: "smooth",
                       });
-
                       setActiveProductImage(index);
                     }}
                     aria-label={`View product photo ${index + 1}`}
@@ -1222,7 +1035,6 @@ export default function CheckoutPage({ productId }: { productId: string }) {
           </div>
         </div>
       </section>
-
       <footer className="border-t border-neutral-200 px-6 py-8">
         <div className="mx-auto max-w-6xl text-center text-sm text-neutral-500">
          Apple online store, enjoy your orders.
